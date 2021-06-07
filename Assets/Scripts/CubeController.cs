@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class CubeController : MonoBehaviour
 {
 
@@ -9,10 +10,12 @@ public class CubeController : MonoBehaviour
 
     List<GameObject> Cubelets = new List<GameObject>();//魔方方块集合
     List<GameObject> MovingCubelets = new List<GameObject>();//需要转动面的方块集合
+    List<TwistAction> HistoryTwistActions = new List<TwistAction>();//历史操作集合
 
     private int type = 90;
     private bool isRotating;//是否在旋转
     private bool isFixFloarError;//当前帧是否需要修复浮点误差
+    private bool cubeOperatLock;//在播放打乱、还原等操作时，禁止交互操作魔方
     private MouseDownType MouseDown=MouseDownType.NOT_DOWN;//鼠标点到的类型
     private float lastx, lasty;//鼠标刚点下时的坐标
     private int rotateId;//旋转轴编号：Y,X,Z;
@@ -25,9 +28,24 @@ public class CubeController : MonoBehaviour
     private int frameCount;
 
     private const int MID_CUBE = 13;//中间方格编号
-    private Vector3 X = new Vector3(1f, 0, 0);
     private Vector3 Y = new Vector3(0, 1f, 0);
+    private Vector3 X = new Vector3(1f, 0, 0);
     private Vector3 Z = new Vector3(0, 0, 1f);
+
+    private const int YID = 1, XID = 2, ZID = 3;
+
+    //面材质
+    public Material BlackMaterial;
+    public Material BlueMaterial;
+    public Material GreenMaterial;
+    public Material OrangeMaterial;
+    public Material RedMaterial;
+    public Material WhiteMaterial;
+    public Material YellowMaterial;
+
+    //面对应的儿子编号
+    private const int UP = 0, DOWN = 1, LEFT = 2, RIGHT = 3, FRONT = 5, BACK = 4;
+
 
     enum MouseDownType { NOT_DOWN , ROTATE_PLANE, ROTATE_WHOLE, ROTATE_PLANE_WAIT, ROTATE_WHOLE_WAIT };
 
@@ -43,6 +61,10 @@ public class CubeController : MonoBehaviour
     void Start()
     {
         CreateCubes();
+        InitCudeColors();
+
+        
+      //  RotateSlowly(Cubelets, Vector3.zero, Y, 90,10);
         
        // RotateOnce(Cubelets,Vector3.zero,X, 110);
         
@@ -68,21 +90,24 @@ public class CubeController : MonoBehaviour
         //}
 
        
-
-       SolveInput();
+        if(!cubeOperatLock&&!isRotating)//没锁
+        {
+            SolveInput();
+        }
+       
         
     }
 
 
     void SolveInput()
     {
-        if (Input.GetMouseButton(0))//
+        if (Input.GetMouseButton(1))//&&Input.mousePosition.y>100)//
         {
             if(MouseDown==MouseDownType.NOT_DOWN)
             {
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                 RaycastHit hit;
-              //  print(Input.mousePosition);
+                print(Input.mousePosition);
 
                 //记录鼠标最先点下的位置
                 lastx = Input.mousePosition.x;
@@ -109,7 +134,7 @@ public class CubeController : MonoBehaviour
                     if (hit.transform.name == "Cube(Clone)"
                         || hit.transform.parent.name == "Cube(Clone)")//点到方块，转动某个面
                     {
-                        print("hit!Rotating a plane....");
+                        //print("hit!Rotating a plane....");
                         if (hit.transform.name == "Cube(Clone)")
                         {
                             hitCubeletVec3 = hit.transform.position;
@@ -123,13 +148,7 @@ public class CubeController : MonoBehaviour
 
 
                     }
-                    else//转动整个魔方
-                    {
-                        //print("Rotating whole cube....");
-                        //MouseDown = MouseDownType.ROTATE_WHOLE_WAIT;
-                        MouseDown = MouseDownType.ROTATE_WHOLE;
-
-                    }
+                   
                 }
                 else//转动整个魔方
                 {
@@ -149,43 +168,81 @@ public class CubeController : MonoBehaviour
         {
             if(MouseDown!=MouseDownType.NOT_DOWN)
             {
-
-                //修复回整数
-                if(MouseDown==MouseDownType.ROTATE_PLANE)
+                if(rotateId!=0)//可能出现单击的情况（鼠标按下5帧后才能决定旋转轴）
                 {
-                    int angle = GetFixedAngle(rotateAngle);
+                    //修复回整数
+                    if (MouseDown == MouseDownType.ROTATE_PLANE)
+                    {
+                        int angle = GetFixedAngle(rotateAngle);
 
-                    if (rotateId == 1)
-                    {
-                        RotateOnce(MovingCubelets, Vector3.zero, RotationVectors[rotateId - 1], angle);
-                        rotateAngle += angle;
-                    }
-                    else
-                    {
-                        RotateOnce(MovingCubelets, Vector3.zero, RotationVectors[rotateId - 1], angle);
-                        rotateAngle += angle;
-                    }
-                    // isFixFloarError = true;
-                    FixFloatError();
-                }
-                else if(MouseDown==MouseDownType.ROTATE_WHOLE)
-                {
-                    int angle = GetFixedAngle(rotateAngle);
+                        if (rotateId == YID)
+                        {
+                            RotateOnce(MovingCubelets, Vector3.zero, RotationVectors[rotateId - 1], angle);
+                            rotateAngle += angle;
+                        }
+                        else
+                        {
+                            RotateOnce(MovingCubelets, Vector3.zero, RotationVectors[rotateId - 1], angle);
+                            rotateAngle += angle;
+                        }
+                        // isFixFloarError = true;
+                        FixFloatError();
 
-                    if (rotateId == 1)
-                    {
-                        RotateOnce(Cubelets, Vector3.zero, RotationVectors[rotateId - 1], angle);
-                        rotateAngle += angle;
+
+                        //记录旋转操作
+                        if (rotateId == YID)
+                        {
+                            InsertTwistAction(new TwistAction("Y", rotateAngle, Mathf.RoundToInt(hitCubeletVec3.y)));
+                        }
+                        else if (rotateId == XID)
+                        {
+                            InsertTwistAction(new TwistAction("X", rotateAngle , Mathf.RoundToInt(hitCubeletVec3.x)));
+                        }
+                        else
+                        {
+                            InsertTwistAction(new TwistAction("Z", rotateAngle , Mathf.RoundToInt(hitCubeletVec3.z)));
+                        }
+
                     }
-                    else
+                    else if (MouseDown == MouseDownType.ROTATE_WHOLE)
                     {
-                        RotateOnce(Cubelets, Vector3.zero, RotationVectors[rotateId - 1], angle);
-                        rotateAngle += angle;
+                        int angle = GetFixedAngle(rotateAngle);
+
+                        if (rotateId == YID)
+                        {
+                            RotateOnce(Cubelets, Vector3.zero, RotationVectors[rotateId - 1], angle);
+                            rotateAngle += angle;
+                        }
+                        else
+                        {
+                            RotateOnce(Cubelets, Vector3.zero, RotationVectors[rotateId - 1], angle);
+                            rotateAngle += angle;
+                        }
+                        // isFixFloarError = true;
+                        FixFloatError();
+
+
+                        //记录旋转操作
+                        if (rotateId == YID)
+                        {
+                           // print("Y" +" " +rotateAngle);
+                            InsertTwistAction(new TwistAction("ALLY", rotateAngle ));
+                        }
+                        else if (rotateId == XID)
+                        {
+                          //  print("X" +  " " + rotateAngle);
+                            InsertTwistAction(new TwistAction("ALLX", rotateAngle ));
+                        }
+                        else
+                        {
+                         //   print("Z" + " " + rotateAngle);
+                            InsertTwistAction(new TwistAction("ALLZ", rotateAngle ));
+                        }
+
                     }
-                    // isFixFloarError = true;
-                    FixFloatError();
-                    
                 }
+
+                
 
 
 
@@ -237,25 +294,25 @@ public class CubeController : MonoBehaviour
             {
                 dx = Input.mousePosition.x - lastx;
                 dy = Input.mousePosition.y - lasty;
-            }
+            }//取前FRAME_COUNT帧的移动总和来决定移动对象
 
             if (rotateId==0)
             {
                 if(Mathf.Abs(dx)>Mathf.Abs(dy))//Y
                 {
-                    rotateId = 1;
+                    rotateId = YID;
                     int w = Mathf.RoundToInt(hitCubeletVec3.y);
                     MovingCubelets = Cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.y) == w);
                 }
                 else if (dx * dy > 0) //绕Z轴
                 {
-                    rotateId = 3;
+                    rotateId = ZID;
                     int w = Mathf.RoundToInt(hitCubeletVec3.z);
                     MovingCubelets = Cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.z) == w);
                 }
                 else//X
                 {
-                    rotateId =2;
+                    rotateId =XID;
                     int w = Mathf.RoundToInt(hitCubeletVec3.x);
                     MovingCubelets = Cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.x) == w);
                 }
@@ -263,9 +320,13 @@ public class CubeController : MonoBehaviour
             }
 
 
+            dx = Input.GetAxis("Mouse X");
+            dy = Input.GetAxis("Mouse Y");
+
+
             int speed = ROTATE_SPEED;
 
-            if (rotateId == 1)
+            if (rotateId == YID)
             {
                 int angle = -(int)(dx * speed);
                 RotateOnce(MovingCubelets, Vector3.zero, RotationVectors[rotateId - 1], angle);
@@ -274,6 +335,7 @@ public class CubeController : MonoBehaviour
             else
             {
                 int angle = -(int)(dy * speed);
+                if (rotateId == ZID) angle = -angle;
                 RotateOnce(MovingCubelets, Vector3.zero, RotationVectors[rotateId - 1], angle);
                 rotateAngle += angle;
             }
@@ -300,7 +362,7 @@ public class CubeController : MonoBehaviour
             {
                 dx = Input.mousePosition.x - lastx;
                 dy = Input.mousePosition.y - lasty;
-            }
+            }//取前FRAME_COUNT帧的移动总和来决定移动对象
 
            
 
@@ -311,23 +373,26 @@ public class CubeController : MonoBehaviour
             {
                 if(Mathf.Abs(dy)<Mathf.Abs(dx))//绕Y轴
                 {
-                    rotateId = 1;
+                    rotateId = YID;
                 }
                 else if(lastx>650)//绕X轴
                 {
-                    rotateId = 2;
+                    rotateId = XID;
                 }
                 else//绕Z轴
                 {
-                    rotateId = 3;
+                    rotateId = ZID;
                 }
             }
 
             //print((int)dx+","+(int)dy);
 
+            dx = Input.GetAxis("Mouse X");
+            dy = Input.GetAxis("Mouse Y");
+
             int speed = ROTATE_SPEED;
 
-            if(rotateId==1)
+            if(rotateId==YID)
             {
                 int angle=-(int)(dx*speed) ;
                 RotateOnce(Cubelets, Vector3.zero, RotationVectors[rotateId - 1], angle);
@@ -336,6 +401,7 @@ public class CubeController : MonoBehaviour
             else
             {
                 int angle = -(int)(dy * speed) ;
+                if (rotateId == ZID) angle = -angle;
                 RotateOnce(Cubelets, Vector3.zero, RotationVectors[rotateId - 1], angle);
                 rotateAngle += angle;
             }
@@ -373,56 +439,11 @@ public class CubeController : MonoBehaviour
                     Mathf.Round(cubelet.transform.localRotation.eulerAngles.z));
         }
 
-        //{
-        //    GameObject cubelet = Cubelets[MID_CUBE];
-        //    cubelet.transform.localPosition = new Vector3(
-        //            Mathf.Round(cubelet.transform.localPosition.x),
-        //            Mathf.Round(cubelet.transform.localPosition.y),
-        //            Mathf.Round(cubelet.transform.localPosition.z));
-        //    cubelet.transform.localRotation = Quaternion.Euler(
-        //            Round((int)cubelet.transform.localRotation.eulerAngles.x),
-        //            Round((int)cubelet.transform.localRotation.eulerAngles.y),
-        //            Round((int)cubelet.transform.localRotation.eulerAngles.z));
-        //    // print("###");
-        //}
-        //float theta_x = Cubelets[MID_CUBE].transform.localEulerAngles.x;
-        //float theta_y = Cubelets[MID_CUBE].transform.localEulerAngles.y;
-        //float theta_z = Cubelets[MID_CUBE].transform.localEulerAngles.z;
-        //var rotation_x = Quaternion.AngleAxis(theta_x, X);
-        //var rotation_y = Quaternion.AngleAxis(theta_y, Y);
-        //var rotation_z = Quaternion.AngleAxis(theta_z, Z);
-        //var rotation = rotation_x * rotation_y * rotation_z;
 
-        //int cude_id = 0;
-
-        //for (int x = -1; x <= 1; x++)
-        //{
-        //    for (int y = -1; y <= 1; y++)
-        //    {
-        //        for (int z = -1; z <= 1; z++)
-        //        {
-        //            if (cude_id != MID_CUBE)
-        //            {
-        //                Cubelets[cude_id].transform.localPosition = rotation * (new Vector3(-x, -y, z));
-        //                Cubelets[cude_id].transform.localEulerAngles = Cubelets[MID_CUBE].transform.localEulerAngles;
-        //            }
-
-
-        //            cude_id++;
-        //        }
-        //    }
-        //}
 
 
     }
 
-    int Round(int angle)
-    {
-        if (angle % 90 > 45)
-            return angle + (90 - angle % 90);
-        else
-            return angle - angle % 90;
-    }
 
 
     /*
@@ -431,8 +452,12 @@ public class CubeController : MonoBehaviour
     IEnumerator Rotate(List<GameObject> cubelets, Vector3 point ,Vector3 rotationVector, int angle, int speed)
     {
         speed = Mathf.Abs(speed);//
+
+        //while (cubeOperatLock) ;
+        //cubeOperatLock = true;
         isRotating = true;
-        if(angle>0)
+
+        if (angle>0)
         {
             while (angle > 0)
             {
@@ -441,6 +466,7 @@ public class CubeController : MonoBehaviour
                 foreach (GameObject cubelet in cubelets)
                     cubelet.transform.RotateAround(point, rotationVector, rotateAngle);
                 angle -= rotateAngle;
+                
                 yield return null;//下一帧继续执行
             }
         }
@@ -457,18 +483,27 @@ public class CubeController : MonoBehaviour
                 yield return null;//下一帧继续执行
             }
         }
-       
+
         isRotating = false;
+        // FixFloatError();
+
+        // cubeOperatLock = false;
     }
-    void RotateSlowly(List<GameObject> cubelets, Vector3 point, Vector3 rotationVector, int angle,int speed)
+    public void RotateSlowly(List<GameObject> cubelets, Vector3 point, Vector3 rotationVector, int angle,int speed)
     {
+       // print(angle + "   " + speed);
         StartCoroutine(Rotate(cubelets, point, rotationVector, angle, speed));
     }
-    void RotateOnce(List<GameObject> cubelets, Vector3 point, Vector3 rotationVector, int angle)
+    public void RotateOnce(List<GameObject> cubelets, Vector3 point, Vector3 rotationVector, int angle)
     {
+        //while (cubeOperatLock) ;
+        //cubeOperatLock = true;
+
         //RotateSlowly(cubelets, point, rotationVector, angle, angle + 10);
         foreach (GameObject cubelet in cubelets)
              cubelet.transform.RotateAround(point, rotationVector, angle);
+
+       // cubeOperatLock = false;
         
     }
 
@@ -492,4 +527,117 @@ public class CubeController : MonoBehaviour
         }
     }
 
+    public void InitCudeColors()
+    {
+        foreach(GameObject cube in Cubelets)
+        {
+            for(int i=0;i<6;i++)
+            {
+                cube.transform.GetChild(i).gameObject.GetComponent<Renderer>().material = BlackMaterial;
+            }
+            if(Mathf.RoundToInt(cube.transform.localPosition.x)==1)
+            {
+                cube.transform.GetChild(LEFT).gameObject.GetComponent<Renderer>().material = OrangeMaterial;
+            }
+            else if (Mathf.RoundToInt(cube.transform.localPosition.x) == -1)
+            {
+                cube.transform.GetChild(RIGHT).gameObject.GetComponent<Renderer>().material = RedMaterial;
+            }
+
+            if (Mathf.RoundToInt(cube.transform.localPosition.y) == 1)
+            {
+                cube.transform.GetChild(UP).gameObject.GetComponent<Renderer>().material = BlueMaterial;
+            }
+            else if (Mathf.RoundToInt(cube.transform.localPosition.y) == -1)
+            {
+                cube.transform.GetChild(DOWN).gameObject.GetComponent<Renderer>().material = GreenMaterial;
+            }
+
+            if (Mathf.RoundToInt(cube.transform.localPosition.z) == 1)
+            {
+                cube.transform.GetChild(FRONT).gameObject.GetComponent<Renderer>().material = YellowMaterial;
+            }
+            else if (Mathf.RoundToInt(cube.transform.localPosition.z) == -1)
+            {
+                cube.transform.GetChild(BACK).gameObject.GetComponent<Renderer>().material = WhiteMaterial;
+            }
+        }
+    }
+
+    public void Shuffle()
+    {
+        if (cubeOperatLock||isRotating ) return;//被锁了，正在进行其他操作。
+        cubeOperatLock = true;
+
+
+        print("shuffle!");
+
+        List<GameObject> moveCubes = new List<GameObject>();
+
+        for(int moveCount=Random.Range(10,20);moveCount>0;--moveCount)
+        {
+            int axis = Random.Range(1, 3);
+            int axisValue = Random.Range(-1, 1);
+            if (axis == YID)
+            {
+                moveCubes = Cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.y) == axisValue);
+                RotateOnce(moveCubes, Vector3.zero, Y,90);
+            }
+            else if(axis==XID)
+            {
+                moveCubes = Cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.x) == axisValue);
+                RotateOnce(moveCubes, Vector3.zero, X, 90);
+            }
+            else
+            {
+                moveCubes = Cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.z) == axisValue);
+                RotateOnce(moveCubes, Vector3.zero, Z, 90);
+            }
+
+
+        }
+
+
+
+
+        cubeOperatLock = false;
+    }
+
+
+    void InsertTwistAction(TwistAction twistAction)
+    {
+        
+        if(twistAction.times!=0)
+        {
+            print(twistAction.type + " " + twistAction.sign + " " + twistAction.times);
+            HistoryTwistActions.Add(twistAction);
+        }
+        
+    }
+
+
+    //回退一步
+    public void UnmakeTwistAction()
+    {
+        if (HistoryTwistActions.Count == 0) return;
+
+        if (cubeOperatLock || isRotating) return;
+        cubeOperatLock = true;
+
+        HistoryTwistActions[HistoryTwistActions.Count - 1].UnmakeTwist(Cubelets);
+        HistoryTwistActions.RemoveAt(HistoryTwistActions.Count - 1);
+
+        
+
+        
+
+        cubeOperatLock = false;
+    }
+
+    public int GetTwistActionCnt()
+    {
+        return HistoryTwistActions.Count;
+    }
+
+    
 }
