@@ -1,0 +1,4 @@
+repository "HelloWorld@ssl://wechat_os_qy01aoev3ugiz739dztptkei8@sh02-plasticscm.unity.cn:8787"
+  path "/"
+    smartbranch "/main/1250378468" 
+     
