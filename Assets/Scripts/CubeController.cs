@@ -7,6 +7,7 @@ public class CubeController : MonoBehaviour
 {
 
     public GameObject CubeletPrefab;
+    
 
     List<GameObject> Cubelets = new List<GameObject>();//魔方方块集合
     List<GameObject> MovingCubelets = new List<GameObject>();//需要转动面的方块集合
@@ -60,15 +61,47 @@ public class CubeController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        CreateCubes();
-        InitCudeColors();
+        //print("Black"+BlackMaterial.color);
+        //print("Blue" + BlueMaterial.color);
+        //print("Green" + GreenMaterial.color);
+        //print("ORANGE" + OrangeMaterial.color);
+        //print("Red" + RedMaterial.color);
+        //print("White" + WhiteMaterial.color);
+        //print("Yellow" + YellowMaterial.color);
 
         
-      //  RotateSlowly(Cubelets, Vector3.zero, Y, 90,10);
-        
-       // RotateOnce(Cubelets,Vector3.zero,X, 110);
-        
-       // FixFloatError();
+
+        CreateCubes();
+
+
+        LoadFormula();
+
+        InitCudeColors();
+
+      //  Debug.Log("#####" + Cubelets[1].transform.GetChild(BACK).GetComponent<Renderer>().material.color);
+
+        //bool ok = false;
+        //Color orange=new Color();
+
+        //foreach(GameObject cube in Cubelets)
+        //{
+        //    if(Mathf.RoundToInt(cube.transform.localPosition.x)==1)
+        //    {
+        //        if(!ok)
+        //        {
+        //            ok = true;
+        //            orange = cube.transform.GetChild(LEFT).gameObject.GetComponent<Renderer>().material.color;
+        //        }
+        //        else if(orange== cube.transform.GetChild(LEFT).gameObject.GetComponent<Renderer>().material.color)
+        //            print("same");
+        //    }
+        //}
+
+        //  RotateSlowly(Cubelets, Vector3.zero, Y, 90,10);
+
+        // RotateOnce(Cubelets,Vector3.zero,X, 110);
+
+        // FixFloatError();
 
         // FixFloatError();
         // CubeletPrefab.transform.Rotate(new Vector3(60, 0, 0));
@@ -107,7 +140,7 @@ public class CubeController : MonoBehaviour
             {
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                 RaycastHit hit;
-                print(Input.mousePosition);
+               // print(Input.mousePosition);
 
                 //记录鼠标最先点下的位置
                 lastx = Input.mousePosition.x;
@@ -298,13 +331,13 @@ public class CubeController : MonoBehaviour
 
             if (rotateId==0)
             {
-                if(Mathf.Abs(dx)>Mathf.Abs(dy))//Y
+                if(Mathf.Abs(dx)*0.85>Mathf.Abs(dy))//Y
                 {
                     rotateId = YID;
                     int w = Mathf.RoundToInt(hitCubeletVec3.y);
                     MovingCubelets = Cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.y) == w);
                 }
-                else if (dx * dy > 0) //绕Z轴
+                else if ((dx > 0&&dy>0)||(dx<0&&dy<0)) //绕Z轴(这里不能用dx*dy>0,因为dx*dy很有可能被近似为0了)
                 {
                     rotateId = ZID;
                     int w = Mathf.RoundToInt(hitCubeletVec3.z);
@@ -449,51 +482,53 @@ public class CubeController : MonoBehaviour
     /*
         旋转点集、旋转向量起点、旋转向量、旋转角度、转速 
     */
-    IEnumerator Rotate(List<GameObject> cubelets, Vector3 point ,Vector3 rotationVector, int angle, int speed)
-    {
-        speed = Mathf.Abs(speed);//
+    //IEnumerator Rotate(List<GameObject> cubelets, Vector3 point ,Vector3 rotationVector, int angle, int speed)
+    //{
+    //    speed = Mathf.Abs(speed);//
 
-        //while (cubeOperatLock) ;
-        //cubeOperatLock = true;
-        isRotating = true;
+    //    //while (cubeOperatLock) ;
+    //    //cubeOperatLock = true;
+    //    isRotating = true;
 
-        if (angle>0)
-        {
-            while (angle > 0)
-            {
-               // print("rotating....");
-                int rotateAngle = angle >= speed ? speed : angle;
-                foreach (GameObject cubelet in cubelets)
-                    cubelet.transform.RotateAround(point, rotationVector, rotateAngle);
-                angle -= rotateAngle;
+    //    if (angle>0)
+    //    {
+    //        while (angle > 0)
+    //        {
+    //           // print("rotating....");
+    //            int rotateAngle = angle >= speed ? speed : angle;
+    //            foreach (GameObject cubelet in cubelets)
+    //                cubelet.transform.RotateAround(point, rotationVector, rotateAngle);
+    //            angle -= rotateAngle;
                 
-                yield return null;//下一帧继续执行
-            }
-        }
-        else
-        {
-            angle = -angle;
-            while (angle > 0)
-            {
-                // print("rotating....");
-                int rotateAngle = angle >= speed ? speed : angle;
-                foreach (GameObject cubelet in cubelets)
-                    cubelet.transform.RotateAround(point, rotationVector, -rotateAngle);
-                angle -= rotateAngle;
-                yield return null;//下一帧继续执行
-            }
-        }
+    //            yield return null;//下一帧继续执行
+    //        }
+    //    }
+    //    else
+    //    {
+    //        angle = -angle;
+    //        while (angle > 0)
+    //        {
+    //            // print("rotating....");
+    //            int rotateAngle = angle >= speed ? speed : angle;
+    //            foreach (GameObject cubelet in cubelets)
+    //                cubelet.transform.RotateAround(point, rotationVector, -rotateAngle);
+    //            angle -= rotateAngle;
+    //            yield return null;//下一帧继续执行
+    //        }
+    //    }
 
-        isRotating = false;
-        // FixFloatError();
+    //    isRotating = false;
+    //    // FixFloatError();
 
-        // cubeOperatLock = false;
-    }
-    public void RotateSlowly(List<GameObject> cubelets, Vector3 point, Vector3 rotationVector, int angle,int speed)
-    {
-       // print(angle + "   " + speed);
-        StartCoroutine(Rotate(cubelets, point, rotationVector, angle, speed));
-    }
+    //    // cubeOperatLock = false;
+    //}
+    //public void RotateSlowly(List<GameObject> cubelets, Vector3 point, Vector3 rotationVector, int angle,int speed)
+    //{
+    //    // print(angle + "   " + speed);
+    //    List<Rotation> rotations = new List<Rotation>();
+    //    rotations.Add(new Rotation(point, rotationVector, angle, speed));
+    //    StartCoroutine(Rotate(cubelets,rotations));
+    //}
     public void RotateOnce(List<GameObject> cubelets, Vector3 point, Vector3 rotationVector, int angle)
     {
         //while (cubeOperatLock) ;
@@ -507,7 +542,120 @@ public class CubeController : MonoBehaviour
         
     }
 
-    
+
+    //必须传整个魔方
+    public void RotateSlowly(List<GameObject> cubelets, TwistAction twist, int speed)
+    {
+        // print(angle + "   " + speed);
+        List<TwistAction> twistActions = new List<TwistAction>();
+        twistActions.Add(twist);
+        StartCoroutine(Rotate(cubelets, twistActions, speed));
+    }
+
+
+    //必须传整个魔方
+    public void RotateSlowly(List<GameObject> cubelets, List<TwistAction> twistActions,int speed)
+    {
+        // print(angle + "   " + speed);
+        StartCoroutine(Rotate(cubelets,twistActions,speed));
+    }
+
+
+    //执行一组旋转
+    //该函数必须只有1个，不能重载,所有需要多帧的旋转必须由此函数操作
+    IEnumerator Rotate(List<GameObject> Cubelets, List<TwistAction>twistActions,int speed)
+    {
+        
+
+        //while (cubeOperatLock) ;
+        //cubeOperatLock = true;
+        isRotating = true;
+        List<GameObject> cubelets = new List<GameObject>();
+
+        foreach (TwistAction twist in twistActions)
+        {
+            int angle = twist.sign * 90 * twist.times;
+            Vector3 point = Vector3.zero;
+            Vector3 rotationVector = new Vector3();
+            switch (twist.type)
+            {
+                case "ALLX":
+                    {
+                        cubelets = Cubelets;
+                        rotationVector = X;
+                        break;
+                    }
+                case "ALLY":
+                    {
+                        cubelets = Cubelets;
+                        rotationVector = Y;
+                        break;
+                    }
+                case "ALLZ":
+                    {
+
+                        cubelets = Cubelets;
+                        rotationVector = Z;
+                        break;
+                    }
+                case "X":
+                    {
+                        cubelets = Cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.x) == twist.axisValue);
+                        rotationVector = X;
+                        
+                        break;
+                    }
+                case "Y":
+                    {
+                        cubelets = Cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.y) == twist.axisValue);
+                        rotationVector = Y;
+                        break;
+                    }
+                case "Z":
+                    {
+                        cubelets = Cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.z) == twist.axisValue);
+                        rotationVector = Z;
+                        break;
+                    }
+                default: break;
+            }
+
+            if (angle > 0)
+            {
+                while (angle > 0)
+                {
+                    // print("rotating....");
+                    int rotateAngle = angle >= speed ? speed : angle;
+                    foreach (GameObject cubelet in cubelets)
+                        cubelet.transform.RotateAround(point, rotationVector, rotateAngle);
+                    angle -= rotateAngle;
+
+                    yield return null;//下一帧继续执行
+                }
+            }
+            else
+            {
+                angle = -angle;
+                while (angle > 0)
+                {
+                    // print("rotating....");
+                    int rotateAngle = angle >= speed ? speed : angle;
+                    foreach (GameObject cubelet in cubelets)
+                        cubelet.transform.RotateAround(point, rotationVector, -rotateAngle);
+                    angle -= rotateAngle;
+                    yield return null;//下一帧继续执行
+                }
+            }
+        }
+
+        
+
+        isRotating = false;
+        // FixFloatError();
+
+        // cubeOperatLock = false;
+    }
+
 
     public void CreateCubes()
     {
@@ -572,6 +720,8 @@ public class CubeController : MonoBehaviour
 
         print("shuffle!");
 
+        //InitCudeColors();
+
         List<GameObject> moveCubes = new List<GameObject>();
 
         for(int moveCount=Random.Range(10,20);moveCount>0;--moveCount)
@@ -597,7 +747,7 @@ public class CubeController : MonoBehaviour
 
         }
 
-
+        FixFloatError();
 
 
         cubeOperatLock = false;
@@ -639,5 +789,60 @@ public class CubeController : MonoBehaviour
         return HistoryTwistActions.Count;
     }
 
-    
+
+    //还原魔方
+    public void Restore()
+    {
+        print("restore");
+        if (cubeOperatLock || isRotating) return;//被锁了，正在进行其他操作。
+        cubeOperatLock = true;
+        print("in restore");
+
+        CubeSolver CubeSolver = new CubeSolver(Cubelets);
+       
+        List<TwistAction> twists=CubeSolver.Solve();
+
+        RotateSlowly(Cubelets, twists, ROTATE_SPEED);
+        cubeOperatLock = false ;
+    }
+
+
+    //导入公式
+    void LoadFormula()
+    {
+        Formula.InitFormula();
+        //InitColorUp();
+
+        //InitCudeColors();
+        //List<TwistAction> twistActions = Formula.PLL_TwistActions[3];
+        //for (int i = twistActions.Count - 1; i >= 0; i--)
+        //{
+        //    TwistAction twist = twistActions[i];
+        //    twist.UnmakeTwistQuickly(Cubelets);
+        //}
+        //foreach(TwistAction twist in twistActions)
+        //{
+        //    twist.MakeTwistQuickly(Cubelets);
+        //}
+
+
+    }
+
+
+    //只给Up面染色
+    void InitColorUp()
+    {
+        foreach (GameObject cube in Cubelets)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                cube.transform.GetChild(i).gameObject.GetComponent<Renderer>().material = BlackMaterial;
+            }
+            if (Mathf.RoundToInt(cube.transform.localPosition.y) == 1)
+            {
+                cube.transform.GetChild(UP).gameObject.GetComponent<Renderer>().material = YellowMaterial;
+            }
+
+        }
+    }
 }

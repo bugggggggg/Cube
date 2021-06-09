@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 
 
-class TwistAction 
+public class TwistAction 
 {
  
     /// <summary>
@@ -34,6 +34,14 @@ class TwistAction
     public TwistAction()
     {
 
+    }
+
+    public TwistAction(TwistAction twistAction)
+    {
+        type = twistAction.type;
+        axisValue = twistAction.axisValue;
+        sign = twistAction.sign;
+        times = twistAction.times;
     }
 
 
@@ -70,57 +78,82 @@ class TwistAction
     //执行该twist
     public void MakeTwist(List<GameObject>cubelets)
     {
+        sign = -sign;
+        UnmakeTwist(cubelets);
+        sign = -sign;
     }
 
-    //反向执行该Twist（即撤销）
-    public void UnmakeTwist(List<GameObject> cubelets)
+    //快速执行该twist
+    public void MakeTwistQuickly(List<GameObject> cubelets)
+    {
+        sign = -sign;
+        UnmakeTwistQuickly(cubelets);
+        sign = -sign;
+    }
+
+    //反向快速执行该twist
+    public void UnmakeTwistQuickly(List<GameObject> cubelets)
     {
         switch (type)
         {
             case "ALLX":
                 {
                     GameObject.Find("CubeController").GetComponent<CubeController>()
-                        .RotateSlowly(cubelets, Vector3.zero, X, -sign*90*times, ROTATE_SPEED);
+                        .RotateOnce(cubelets, Vector3.zero, X, -sign * 90 * times);
                     break;
                 }
             case "ALLY":
                 {
-                        GameObject.Find("CubeController").GetComponent<CubeController>()
-                            .RotateSlowly(cubelets, Vector3.zero, Y, -sign * 90*times,ROTATE_SPEED);
+                    GameObject.Find("CubeController").GetComponent<CubeController>()
+                        .RotateOnce(cubelets, Vector3.zero, Y, -sign * 90 * times);
                     break;
                 }
             case "ALLZ":
                 {
 
-                        GameObject.Find("CubeController").GetComponent<CubeController>()
-                            .RotateSlowly(cubelets, Vector3.zero, Z, -sign * 90*times, ROTATE_SPEED);
+                    GameObject.Find("CubeController").GetComponent<CubeController>()
+                        .RotateOnce(cubelets, Vector3.zero, Z, -sign * 90 * times);
                     break;
                 }
             case "X":
                 {
                     GameObject.Find("CubeController").GetComponent<CubeController>()
-                        .RotateSlowly(cubelets.FindAll(cube=>Mathf.RoundToInt(cube.transform.localPosition.x)==axisValue)
-                        , Vector3.zero, X, -sign * 90 * times, ROTATE_SPEED);
+                        .RotateOnce(cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.x) == axisValue)
+                        , Vector3.zero, X, -sign * 90 * times);
                     break;
                 }
             case "Y":
                 {
                     GameObject.Find("CubeController").GetComponent<CubeController>()
-                        .RotateSlowly(cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.y) == axisValue)
-                        , Vector3.zero, Y, -sign * 90 * times, ROTATE_SPEED);
+                        .RotateOnce(cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.y) == axisValue)
+                        , Vector3.zero, Y, -sign * 90 * times);
                     break;
                 }
             case "Z":
                 {
                     GameObject.Find("CubeController").GetComponent<CubeController>()
-                        .RotateSlowly(cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.z) == axisValue)
-                        , Vector3.zero, Z, -sign * 90 * times, ROTATE_SPEED);
+                        .RotateOnce(cubelets.FindAll(cube => Mathf.RoundToInt(cube.transform.localPosition.z) == axisValue)
+                        , Vector3.zero, Z, -sign * 90 * times);
                     break;
                 }
             default: break;
         }
+    }
+
+
+
+    //反向执行该Twist（即撤销）
+    public void UnmakeTwist(List<GameObject> cubelets)
+    {
+        TwistAction _twist = new TwistAction(this);
+        _twist.sign = -_twist.sign;
+        GameObject.Find("CubeController").GetComponent<CubeController>()
+                        .RotateSlowly(cubelets, _twist, ROTATE_SPEED);
+        
 
 
     }
+
+    
 }
 
