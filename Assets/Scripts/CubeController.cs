@@ -813,14 +813,17 @@ public class CubeController : MonoBehaviour
         Formula.InitFormula();
         //InitColorUp();
 
-        //InitCudeColors();
-        //List<TwistAction> twistActions = Formula.PLL_TwistActions[3];
+        ////InitCudeColors();
+        //List<TwistAction> twistActions = Formula.F2L_TwistActions[31];
+       
         //for (int i = twistActions.Count - 1; i >= 0; i--)
         //{
         //    TwistAction twist = twistActions[i];
         //    twist.UnmakeTwistQuickly(Cubelets);
         //}
-        //foreach(TwistAction twist in twistActions)
+
+
+        //foreach (TwistAction twist in twistActions)
         //{
         //    twist.MakeTwistQuickly(Cubelets);
         //}

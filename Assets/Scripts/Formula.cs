@@ -9,7 +9,7 @@ using UnityEngine;
 public class Formula
 {
     
-
+    //调试时改为了public,最后要改回private
     static private string[] F2Ls =
     {
         "U(RU'R')",
@@ -168,9 +168,10 @@ public class Formula
         List<TwistAction> twistActions = new List<TwistAction>();
 
         int lastcnt = 0;
+        int lastLeftBracket = 0;
         for(int i=0; i< formula.Length; ++i)
         {
-            if(formula[i]=='D')
+            if (formula[i] == 'D')
             {
                 twistActions.Add(new TwistAction("Y", -90, -1));
                 lastcnt = 1;
@@ -237,21 +238,42 @@ public class Formula
             }
             else if (formula[i] == '\'')
             {
-             
-                for(int j=twistActions.Count-1;j>= twistActions.Count-lastcnt;j--)
+
+                for (int j = twistActions.Count - 1; j >= twistActions.Count - lastcnt; j--)
                 {
                     twistActions[j].sign = -twistActions[j].sign;
                 }
             }
-            else if (formula[i] == '2')
+            else if (formula[i] == '2' || formula[i] == '3')
             {
-                for (int j = twistActions.Count - 1; j >= twistActions.Count - lastcnt; j--)
+                if (formula[i - 1] != ')')
                 {
-                    twistActions[j].times = twistActions[j].times * 2;
+                    for (int j = twistActions.Count - 1; j >= twistActions.Count - lastcnt; j--)
+                    {
+                        twistActions[j].times = twistActions[j].times * 2;
+                    }
+                }
+                else
+                {
+                    List<TwistAction> tmp_twistActions = FormulaStringToTwistActions(formula.Substring(lastLeftBracket + 1, i - lastLeftBracket-1));
+                    int cnt = formula[i] - '0';
+                    while(cnt>1)
+                    {
+                        foreach (TwistAction twist in tmp_twistActions)
+                        {
+                            twistActions.Add(twist);
+                        }
+                        --cnt;
+                    }
+                    
                 }
             }
-
+            else if(formula[i]=='(')
+            {
+                lastLeftBracket = i;
+            }
             
+
         }
 
 

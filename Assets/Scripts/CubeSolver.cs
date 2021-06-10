@@ -367,6 +367,9 @@ public class CubeSolver
     }
 
 
+
+
+    //这里还有问题______________________________________________________________(solved)
     //还原顶层面
     void SolveThirdLayerPlane()
     {
@@ -576,6 +579,7 @@ public class CubeSolver
                     }
                     else if (x == 1 && z == -1)
                     {
+                        //Debug.Log("@@@");
                         InsertTwistAction("Z", -1, 90);
                         InsertTwistAction("Y", 1, -90);
                         InsertTwistAction("Z", -1, -90);
@@ -583,6 +587,7 @@ public class CubeSolver
                     }
                     else if (x == -1 && z == 1)
                     {
+                        //Debug.Log("###");
                         InsertTwistAction("Y", 1, 90);
                         InsertTwistAction("Z", 1, -90);
                         InsertTwistAction("Y", 1, 90);
@@ -592,6 +597,7 @@ public class CubeSolver
                     }
                     else if (x == -1 && z == -1)
                     {
+                       // Debug.Log("$$$");
                         InsertTwistAction("X", -1, 90);
                         InsertTwistAction("Y", 1, 90);
                         InsertTwistAction("X", -1, -90);
