@@ -428,7 +428,6 @@ public class CubeSolver
     //还原顶层边
     void SolveThirdLayerEdge()
     {
-        if (JudgeCompleteAll()) return;
 
         //整体转
         for(int _=0;_<4;_++)
@@ -438,12 +437,29 @@ public class CubeSolver
                 (new TwistAction("ALLY", 90, 1)).MakeTwistQuickly(Cubelets);
             }
 
+            
+
             //顶层转
             for (int i = 0; i < 4; i++)
             {
+
                 for (int j = 0; j < i; j++)
                 {
                     (new TwistAction("Y", 90, 1)).MakeTwistQuickly(Cubelets);
+                }
+
+                //不用套公式就成功了
+                if (JudgeCompleteAll())
+                {
+                    for (int j = 0; j < _; j++)
+                    {
+                        InsertTwistActionOnlyAdd(new TwistAction("ALLY", 90, 1));
+                    }
+                    for (int j = 0; j < i; j++)
+                    {
+                        InsertTwistActionOnlyAdd(new TwistAction("Y", 90, 1));
+                    }
+                    return;
                 }
 
                 //按PLL公式转
@@ -894,7 +910,7 @@ public class CubeSolver
         InsertTwistAction("X", 1, 90);
     }
 
-    //对应F2L-25
+    //对应F2L-26
     //UUFU'F'U'y'F'UFy
     void F2L_Contrary()
     {

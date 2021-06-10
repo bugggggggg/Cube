@@ -48,7 +48,18 @@ public class CubeController : MonoBehaviour
     private const int UP = 0, DOWN = 1, LEFT = 2, RIGHT = 3, FRONT = 5, BACK = 4;
 
 
+    //存教学模式的公式
+    private List<TwistAction> TeachTwistActions = new List<TwistAction>();
+    private int TeachTwistActions_point;//记录走到了公式哪一步
+    private Vector3[,] CubeletsState = new Vector3[27, 2];//切换模式时记录原始魔方状态
+    private List<TwistAction> HistoryTwistActionsState = new List<TwistAction>();//切换模式时记录历史操作集合
+
+    private Mode mode = Mode.FREE_PLAY;
+    
     enum MouseDownType { NOT_DOWN , ROTATE_PLANE, ROTATE_WHOLE, ROTATE_PLANE_WAIT, ROTATE_WHOLE_WAIT };
+
+    //自由玩模式、教学模式、辅助还原模式
+    enum Mode { FREE_PLAY,TEACH, AUXILIARY};
 
     Vector3[] RotationVectors =
     {
@@ -651,7 +662,7 @@ public class CubeController : MonoBehaviour
         
 
         isRotating = false;
-        // FixFloatError();
+         FixFloatError();
 
         // cubeOperatLock = false;
     }
@@ -675,6 +686,8 @@ public class CubeController : MonoBehaviour
         }
     }
 
+
+    //给魔方每个面染色
     public void InitCudeColors()
     {
         foreach(GameObject cube in Cubelets)
@@ -710,6 +723,33 @@ public class CubeController : MonoBehaviour
                 cube.transform.GetChild(BACK).gameObject.GetComponent<Renderer>().material = WhiteMaterial;
             }
         }
+    }
+
+
+    //重置
+    //彻底恢复魔方(每面的颜色、每个方块的独自坐标轴)
+    public void ResetCubeTransformAndColors()
+    {
+        print("重置");
+
+        //重置方向
+        int i = 0;
+        for (int x = -1; x <= 1; x++)
+        {
+            for (int y = -1; y <= 1; y++)
+            {
+                for (int z = -1; z <= 1; z++)
+                {
+                    GameObject cubelet = Cubelets[i];
+                    cubelet.transform.localPosition = new Vector3(-x, -y, z);
+                    cubelet.transform.localEulerAngles = new Vector3(0, 0, 0);
+                    ++i;
+                }
+            }
+        }
+        //重置颜色
+        InitCudeColors();
+
     }
 
     public void Shuffle()
@@ -759,7 +799,7 @@ public class CubeController : MonoBehaviour
         
         if(twistAction.times!=0)
         {
-            print(twistAction.type + " " + twistAction.sign + " " + twistAction.times);
+            //print(twistAction.type + " " + twistAction.sign + " " + twistAction.times);
             HistoryTwistActions.Add(twistAction);
         }
         
@@ -803,7 +843,24 @@ public class CubeController : MonoBehaviour
         List<TwistAction> twists=CubeSolver.Solve();
 
         RotateSlowly(Cubelets, twists, ROTATE_SPEED);
+
+        //这里不能操作魔方，rotateslow还在进行
+        
         cubeOperatLock = false ;
+    }
+
+
+    //重置
+    public void Reset()
+    { 
+        print("reset");
+        if (cubeOperatLock || isRotating) return;//被锁了，正在进行其他操作。
+        cubeOperatLock = true;
+    
+        ResetCubeTransformAndColors();
+        HistoryTwistActions.Clear();
+
+        cubeOperatLock = false;
     }
 
 
@@ -814,8 +871,15 @@ public class CubeController : MonoBehaviour
         //InitColorUp();
 
         ////InitCudeColors();
-        //List<TwistAction> twistActions = Formula.F2L_TwistActions[31];
-       
+        //List<TwistAction> twistActions = Formula.OLL_TwistActions[48];
+        //int pp = 0;
+        //print(Formula.OLLs[48]);
+        //foreach (TwistAction twist in twistActions)
+        //{
+        //    ++pp;
+        //    print(pp + ": " + twist.type + "  " + twist.sign + " " + twist.times + " " + twist.axisValue);
+        //}
+
         //for (int i = twistActions.Count - 1; i >= 0; i--)
         //{
         //    TwistAction twist = twistActions[i];
@@ -847,5 +911,169 @@ public class CubeController : MonoBehaviour
             }
 
         }
+    }
+
+
+    
+    void InitColorFirstSecondLayer()
+    {
+        foreach (GameObject cube in Cubelets)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                cube.transform.GetChild(i).gameObject.GetComponent<Renderer>().material = BlackMaterial;
+            }
+
+            //是最顶层的，不染
+            if (Mathf.RoundToInt(cube.transform.localPosition.y) == 1)
+            {
+                continue;
+            }
+
+            if (Mathf.RoundToInt(cube.transform.localPosition.x) == 1)
+            {
+                cube.transform.GetChild(LEFT).gameObject.GetComponent<Renderer>().material = OrangeMaterial;
+            }
+            else if (Mathf.RoundToInt(cube.transform.localPosition.x) == -1)
+            {
+                cube.transform.GetChild(RIGHT).gameObject.GetComponent<Renderer>().material = RedMaterial;
+            }
+
+            if (Mathf.RoundToInt(cube.transform.localPosition.y) == 1)
+            {
+                cube.transform.GetChild(UP).gameObject.GetComponent<Renderer>().material = BlueMaterial;
+            }
+            else if (Mathf.RoundToInt(cube.transform.localPosition.y) == -1)
+            {
+                cube.transform.GetChild(DOWN).gameObject.GetComponent<Renderer>().material = GreenMaterial;
+            }
+
+            if (Mathf.RoundToInt(cube.transform.localPosition.z) == 1)
+            {
+                cube.transform.GetChild(FRONT).gameObject.GetComponent<Renderer>().material = YellowMaterial;
+            }
+            else if (Mathf.RoundToInt(cube.transform.localPosition.z) == -1)
+            {
+                cube.transform.GetChild(BACK).gameObject.GetComponent<Renderer>().material = WhiteMaterial;
+            }
+        }
+    }
+
+
+
+
+
+    //进入教学模式
+    //教学模式，逐步演示公式
+    //"F2L","OLL","PLL"  0,1,2,^^^
+    public void ShowFormula(string formulatype,int id)
+    {
+        
+        if (cubeOperatLock || isRotating) return;//被锁了，正在进行其他操作。
+        cubeOperatLock = true;
+
+        if(mode!=Mode.TEACH)//首次进入教学模式，记录原来魔方状态
+        {
+            RecordCubeletsStates();
+            mode = Mode.TEACH;
+            LockButtonWhenFreePlayToTeach();
+        }
+
+        ResetCubeTransformAndColors();
+        
+        if(formulatype=="F2L")
+        {
+            InitColorFirstSecondLayer();
+            TeachTwistActions = Formula.F2L_TwistActions[id];
+        }
+        else if(formulatype=="OLL")
+        {
+            InitColorUp();
+            TeachTwistActions = Formula.OLL_TwistActions[id];
+        }
+        else
+        {
+            InitCudeColors();
+            TeachTwistActions = Formula.PLL_TwistActions[id];
+        }
+
+        for (int i = TeachTwistActions.Count - 1; i >= 0; i--)
+        {
+            TeachTwistActions[i].UnmakeTwistQuickly(Cubelets);
+        }
+        TeachTwistActions_point = 0;
+
+        cubeOperatLock = false;
+    }
+
+
+    //返回自由玩模式
+    public void ReturnToFreePlayMode()
+    {
+        if (cubeOperatLock || isRotating) return;//被锁了，正在进行其他操作。
+        cubeOperatLock = true;
+        if (mode != Mode.FREE_PLAY)
+        {
+            mode = Mode.FREE_PLAY;
+            ResetCubeTransformAndColors();//恢复现场
+            RestoreCubeletsStates();//
+            LockButtonWhenTeachToFreePlay();//自由玩模式的按钮
+
+        }
+
+        cubeOperatLock = false;
+    }
+
+
+    void RecordCubeletsStates()
+    {
+        for(int i=0;i<27;i++)
+        {
+            GameObject cube = Cubelets[i];
+            CubeletsState[i,0] = cube.transform.localPosition;
+            CubeletsState[i, 1] = cube.transform.localEulerAngles;
+        }
+        HistoryTwistActionsState.Clear();
+        foreach (TwistAction twist in HistoryTwistActions)
+        {
+            HistoryTwistActionsState.Add(new TwistAction(twist));
+        }
+ 
+        HistoryTwistActions.Clear();
+    }
+
+    void RestoreCubeletsStates()
+    {
+        for (int i = 0; i < 27; i++)
+        {
+            GameObject cube = Cubelets[i];
+            cube.transform.localPosition=CubeletsState[i, 0] ;
+            cube.transform.localEulerAngles=CubeletsState[i, 1] ;
+        }
+        HistoryTwistActions.Clear();
+        foreach (TwistAction twist in HistoryTwistActionsState)
+        {
+            HistoryTwistActions.Add(new TwistAction(twist));
+        }
+        HistoryTwistActionsState.Clear();
+    }
+
+
+
+
+    void LockButtonWhenFreePlayToTeach()
+    {
+        GameObject.Find("ShuffleButton").GetComponent<ShuffleButtonController>().ShuffleButton.interactable = false;
+        GameObject.Find("ResetButton").GetComponent<ResetButtonController>().ResetButton.interactable = false;
+        GameObject.Find("RestoreButton").GetComponent<RestoreButtonController>().RestoreButton.interactable = false;
+        GameObject.Find("ReturnToFreePlayButton").GetComponent<ReturnToFreePlayButtonController>().button.interactable = true;
+    }
+
+    void LockButtonWhenTeachToFreePlay()
+    {
+        GameObject.Find("ShuffleButton").GetComponent<ShuffleButtonController>().ShuffleButton.interactable = true;
+        GameObject.Find("ResetButton").GetComponent<ResetButtonController>().ResetButton.interactable = true;
+        GameObject.Find("RestoreButton").GetComponent<RestoreButtonController>().RestoreButton.interactable = true;
+        GameObject.Find("ReturnToFreePlayButton").GetComponent<ReturnToFreePlayButtonController>().button.interactable = false;
     }
 }

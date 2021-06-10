@@ -10,7 +10,7 @@ public class Formula
 {
     
     //调试时改为了public,最后要改回private
-    static private string[] F2Ls =
+    static public string[] F2Ls =
     {
         "U(RU'R')",
         "y'U'(R'UR)y",
@@ -55,7 +55,7 @@ public class Formula
         "(RU'R') (rU'r'U2rUr')",
     };
 
-    static private string[] OLLs =
+    static public string[] OLLs =
     {
         "(RU'R2'D') (rU'r'D) R2UR'",
         "(RU'R2'D') (rUr'D) R2UR'",
@@ -116,7 +116,7 @@ public class Formula
         "(RUR'U') r(R'URU'r')",
     };
 
-    static private string[] PLLs =
+    static public string[] PLLs =
     {
         "(l'UR'D2) (RU'R'D2) R2x'",
         "(lU'RD2) (R'URD2) R2'x",
@@ -150,7 +150,7 @@ public class Formula
 
     /// <summary>
     /// 把一个表示旋转的字符串转换成一个TwistAction序列
-    /// D F M R U d f l r u x y
+    /// D F M R U d f l r u x y L 2 3 ' (  ) S B
     /// 对应关系：
     /// 大写单字母表示顺时针(从这个方向看的顺时针)转90度，加'表示逆时针
     /// 加2表示执行2次
@@ -193,7 +193,7 @@ public class Formula
                 twistActions.Add(new TwistAction("Z", 90, 0));
                 lastcnt = 2;
             }
-            else if (formula[i] == 'M')
+            else if (formula[i] == 'M'||formula[i]=='m')
             {
                 twistActions.Add(new TwistAction("X", 90, 0));
                 lastcnt = 1;
@@ -226,14 +226,46 @@ public class Formula
                 twistActions.Add(new TwistAction("X", 90, 0));
                 lastcnt = 2;
             }
-            else if (formula[i] == 'x')
+            else if (formula[i] == 'L')
             {
-                twistActions.Add(new TwistAction("ALLX", 90));
+                twistActions.Add(new TwistAction("X", 90, 1));
                 lastcnt = 1;
             }
-            else if (formula[i] == 'y')
+            else if (formula[i] == 'S'||formula[i]=='s')
+            {
+                twistActions.Add(new TwistAction("Z", 90, 0));
+                lastcnt = 1;
+            }
+            else if (formula[i] == 'B')
+            {
+                twistActions.Add(new TwistAction("Z", -90, -1));
+                lastcnt = 1;
+            }
+            else if (formula[i] == 'b')
+            {
+                twistActions.Add(new TwistAction("Z", -90, -1));
+                twistActions.Add(new TwistAction("Z", -90, 0));
+                lastcnt = 2;
+            }
+            else if (formula[i] == 'e'|| formula[i]=='E')
+            {
+                twistActions.Add(new TwistAction("Y", -90, 0));
+                
+                lastcnt = 1;
+            }
+            else if (formula[i] == 'x'||formula[i]=='X')
+            {
+                twistActions.Add(new TwistAction("ALLX", -90));
+                lastcnt = 1;
+            }////x是整体逆时针90度
+            else if (formula[i] == 'y'||formula[i]=='Y')
             {
                 twistActions.Add(new TwistAction("ALLY", 90));
+                lastcnt = 1;
+            }
+            else if (formula[i] == 'z' || formula[i] == 'Z')
+            {
+                twistActions.Add(new TwistAction("ALLZ", 90));
                 lastcnt = 1;
             }
             else if (formula[i] == '\'')
