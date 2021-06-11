@@ -824,6 +824,20 @@ public class CubeController : MonoBehaviour
         cubeOperatLock = false;
     }
 
+    //回退全部历史操作
+    public void UnmakeAllTwistActionQuickly()
+    {
+        if (HistoryTwistActions.Count == 0) return;
+
+
+        for(int i=HistoryTwistActions.Count-1;i>=0;i--)
+        {
+            HistoryTwistActions[i].UnmakeTwistQuickly(Cubelets);
+        }
+        HistoryTwistActions.Clear();
+
+    }
+
     public int GetTwistActionCnt()
     {
         return HistoryTwistActions.Count;
@@ -1067,6 +1081,8 @@ public class CubeController : MonoBehaviour
         GameObject.Find("ResetButton").GetComponent<ResetButtonController>().ResetButton.interactable = false;
         GameObject.Find("RestoreButton").GetComponent<RestoreButtonController>().RestoreButton.interactable = false;
         GameObject.Find("ReturnToFreePlayButton").GetComponent<ReturnToFreePlayButtonController>().button.interactable = true;
+        GameObject.Find("PreviousStepButton").GetComponent<PreviousStepButtonController>().PreviousStepButton.interactable = true;
+        GameObject.Find("NextStepButton").GetComponent<NextStepButtonController>().NextStepButton.interactable = true;
     }
 
     void LockButtonWhenTeachToFreePlay()
@@ -1075,5 +1091,45 @@ public class CubeController : MonoBehaviour
         GameObject.Find("ResetButton").GetComponent<ResetButtonController>().ResetButton.interactable = true;
         GameObject.Find("RestoreButton").GetComponent<RestoreButtonController>().RestoreButton.interactable = true;
         GameObject.Find("ReturnToFreePlayButton").GetComponent<ReturnToFreePlayButtonController>().button.interactable = false;
+        GameObject.Find("PreviousStepButton").GetComponent<PreviousStepButtonController>().PreviousStepButton.interactable = false;
+        GameObject.Find("NextStepButton").GetComponent<NextStepButtonController>().NextStepButton.interactable = false;
+    }
+
+
+
+    //教学模式下一步
+    public void TeachModeNextStep()
+    {
+        if (cubeOperatLock || isRotating) return;//被锁了，正在进行其他操作。
+        cubeOperatLock = true;
+
+        //先把用户的操作全部撤销
+        UnmakeAllTwistActionQuickly();
+        //走到底了
+        if (TeachTwistActions_point!=TeachTwistActions.Count)
+        {
+                TeachTwistActions[TeachTwistActions_point].MakeTwist(Cubelets);
+            ++TeachTwistActions_point;
+        }
+        cubeOperatLock = false;
+    }
+
+
+    //教学模式前一步
+    public void TeachModePreviousStep()
+    {
+        if (cubeOperatLock || isRotating) return;//被锁了，正在进行其他操作。
+        cubeOperatLock = true;
+
+        //先把用户的操作全部撤销
+        UnmakeAllTwistActionQuickly();
+        //在开头
+        if (TeachTwistActions_point != 0)
+        {
+            --TeachTwistActions_point;
+            TeachTwistActions[TeachTwistActions_point].UnmakeTwist(Cubelets);
+            
+        }
+        cubeOperatLock = false;
     }
 }
