@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.UI;
 
 public class CubeController : MonoBehaviour
 {
@@ -852,9 +852,10 @@ public class CubeController : MonoBehaviour
         cubeOperatLock = true;
         print("in restore");
 
-        CubeSolver CubeSolver = new CubeSolver(Cubelets);
-       
-        List<TwistAction> twists=CubeSolver.Solve();
+        CubeSolver cubeSolver = new CubeSolver(Cubelets);
+
+        // List<TwistAction> twists=cubeSolver.Solve();
+        List<TwistAction> twists = cubeSolver.SolveByStep();
 
         RotateSlowly(Cubelets, twists, ROTATE_SPEED);
 
@@ -994,23 +995,32 @@ public class CubeController : MonoBehaviour
         }
 
         ResetCubeTransformAndColors();
+        string formula;
         
         if(formulatype=="F2L")
         {
             InitColorFirstSecondLayer();
             TeachTwistActions = Formula.F2L_TwistActions[id];
+            formula = Formula.F2Ls[id];
         }
         else if(formulatype=="OLL")
         {
             InitColorUp();
             TeachTwistActions = Formula.OLL_TwistActions[id];
+            formula = Formula.OLLs[id];
         }
         else
         {
             InitCudeColors();
             TeachTwistActions = Formula.PLL_TwistActions[id];
+            formula = Formula.PLLs[id];
         }
 
+        //展示公式
+        GameObject.Find("Canvas/FormulaText").gameObject.GetComponent<Text>().text =
+            Formula.TwistActionsToFormulaString(TeachTwistActions);
+
+        //恢复到公式初始状态
         for (int i = TeachTwistActions.Count - 1; i >= 0; i--)
         {
             TeachTwistActions[i].UnmakeTwistQuickly(Cubelets);
@@ -1032,7 +1042,7 @@ public class CubeController : MonoBehaviour
             ResetCubeTransformAndColors();//恢复现场
             RestoreCubeletsStates();//
             LockButtonWhenTeachToFreePlay();//自由玩模式的按钮
-
+            GameObject.Find("Canvas/FormulaText").gameObject.GetComponent<Text>().text = "";
         }
 
         cubeOperatLock = false;
@@ -1080,6 +1090,7 @@ public class CubeController : MonoBehaviour
         GameObject.Find("ShuffleButton").GetComponent<ShuffleButtonController>().ShuffleButton.interactable = false;
         GameObject.Find("ResetButton").GetComponent<ResetButtonController>().ResetButton.interactable = false;
         GameObject.Find("RestoreButton").GetComponent<RestoreButtonController>().RestoreButton.interactable = false;
+        GameObject.Find("TipsButton").GetComponent<TipsButtonController>().TipsButton.interactable = false;
         GameObject.Find("ReturnToFreePlayButton").GetComponent<ReturnToFreePlayButtonController>().button.interactable = true;
         GameObject.Find("PreviousStepButton").GetComponent<PreviousStepButtonController>().PreviousStepButton.interactable = true;
         GameObject.Find("NextStepButton").GetComponent<NextStepButtonController>().NextStepButton.interactable = true;
@@ -1090,6 +1101,7 @@ public class CubeController : MonoBehaviour
         GameObject.Find("ShuffleButton").GetComponent<ShuffleButtonController>().ShuffleButton.interactable = true;
         GameObject.Find("ResetButton").GetComponent<ResetButtonController>().ResetButton.interactable = true;
         GameObject.Find("RestoreButton").GetComponent<RestoreButtonController>().RestoreButton.interactable = true;
+        GameObject.Find("TipsButton").GetComponent<TipsButtonController>().TipsButton.interactable = true;
         GameObject.Find("ReturnToFreePlayButton").GetComponent<ReturnToFreePlayButtonController>().button.interactable = false;
         GameObject.Find("PreviousStepButton").GetComponent<PreviousStepButtonController>().PreviousStepButton.interactable = false;
         GameObject.Find("NextStepButton").GetComponent<NextStepButtonController>().NextStepButton.interactable = false;
@@ -1131,5 +1143,43 @@ public class CubeController : MonoBehaviour
             
         }
         cubeOperatLock = false;
+    }
+
+
+
+    //还原提示
+    public void ShowRestoreTips()
+    {
+        Debug.Log("show tips");
+
+        
+        if (cubeOperatLock || isRotating) return;//被锁了，正在进行其他操作。
+        cubeOperatLock = true;
+        Debug.Log("in show tips");
+
+        CubeSolver cubeSolver = new CubeSolver(Cubelets);
+
+        string tips = cubeSolver.ShowTips();
+        //string tips = "YES";
+        //if (!cubeSolver.JudgeDownPlaneCross()) tips = "NO";
+
+        GameObject.Find("Canvas/TipsText").gameObject.GetComponent<Text>().text = tips;
+
+
+
+        cubeOperatLock = false;
+
+    }
+
+
+    public void Quit()
+    {
+
+        #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+        #else
+            Application.Quit();
+        #endif
+        
     }
 }

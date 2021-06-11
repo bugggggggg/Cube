@@ -27,6 +27,7 @@ public class CubeSolver
     private List<GameObject> Cubelets = new List<GameObject>();//待解的魔方
     private List<TwistAction> TwistActions = new List<TwistAction>();//解方案集合
     private Color DownColor, UpColor;//底面和顶面的颜色
+    private int Use_OLLId=-1, Use_PLLId=-1;
 
     //和CubeController里统一
     private const int UP = 0, DOWN = 1, LEFT = 2, RIGHT = 3, FRONT = 5, BACK = 4;
@@ -74,6 +75,9 @@ public class CubeSolver
         //SolveByLayerFirst();
         SolveByCFOP();
 
+
+
+
         //Color FrontColor = GetCenterCubeColor(FRONT);
         //Debug.Log("___"+ GetCubeColorByDirection(Cubelets[1], BACK));
         //Debug.Log("___" + FrontColor);
@@ -85,6 +89,80 @@ public class CubeSolver
         }
         //InsertTwistAction("ALLX", 1, 90);
         //InsertTwistAction("ALLY", 1, 90);
+        return TwistActions;
+    }
+
+    public string ShowTips()
+    {
+        string tips = "";
+
+        if(!JudgeDownPlaneCross())
+        {
+            tips = "你需要先还原一个十字，并转到底面";
+        }
+        else if(!JudgeDownCorner()||!JudgeSecondLayerEdge())
+        {
+            tips = "你可以用F2L公式来进一步还原下两层";
+        }
+        else if(!JudgeCompleteByDirection(UP))
+        {
+            SolveThirdLayerPlane();
+            tips = "你可以用OLL-"+Use_OLLId.ToString()+"公式还原顶层";
+        }
+        else if(!JudgeCompleteAll())
+        {
+            SolveThirdLayerEdge();
+            if(Use_PLLId==-1)
+            {
+                tips = "你再转转顶层就还原成功了";
+            }
+            else tips = "你可以用PLL-"+Use_PLLId.ToString()+"公式还原剩余部分";
+        }
+        else
+        {
+            tips = "魔方已经复原了";
+        }
+
+
+        foreach (GameObject cube in Cubelets)
+        {
+            GameObject.Destroy(cube);
+        }
+        return tips;
+    }
+
+    public List<TwistAction> SolveByStep()
+    {
+        TwistActions.Clear();
+
+
+        if (!JudgeDownPlaneCross())
+        {
+            SolveFirstLayerEdge();
+        }
+        else if (!JudgeDownCorner() || !JudgeSecondLayerEdge())
+        {
+            SolveFirstTwoLayerEdge();
+        }
+        else if (!JudgeCompleteByDirection(UP))
+        {
+            SolveThirdLayerPlane();
+            
+        }
+        else if (!JudgeCompleteAll())
+        {
+            SolveThirdLayerEdge();
+        }
+        else
+        {
+
+        }
+
+        foreach (GameObject cube in Cubelets)
+        {
+            GameObject.Destroy(cube);
+        }
+        
         return TwistActions;
     }
 
@@ -385,8 +463,10 @@ public class CubeSolver
             {
                 (new TwistAction("Y", 90, 1)).MakeTwistQuickly(Cubelets);
             }
+            int id = -1;
             foreach(List<TwistAction> twistActions in Formula.OLL_TwistActions)
             {
+                ++id;
                 foreach(TwistAction twist in twistActions)
                 {
                     twist.MakeTwistQuickly(Cubelets);
@@ -402,7 +482,7 @@ public class CubeSolver
                         InsertTwistActionOnlyAdd(twist);
 
                     }
-                    
+                    Use_OLLId = id;//记录使用的公式编号
                     return;
                 }
                 for(int j=twistActions.Count-1;j>=0;j--)
@@ -462,9 +542,12 @@ public class CubeSolver
                     return;
                 }
 
+
+                int id = -1;
                 //按PLL公式转
                 foreach (List<TwistAction> twistActions in Formula.PLL_TwistActions)
                 {
+                    ++id;
                     foreach (TwistAction twist in twistActions)
                     {
                         twist.MakeTwistQuickly(Cubelets);
@@ -484,7 +567,7 @@ public class CubeSolver
                             InsertTwistActionOnlyAdd(twist);
 
                         }
-
+                        Use_PLLId = id;//记录使用的公式编号
                         return;
                     }
                     for (int j = twistActions.Count - 1; j >= 0; j--)
@@ -745,6 +828,77 @@ public class CubeSolver
     }
 
 
+    //判断底层十字是否还原成功
+    bool JudgeDownPlaneCross()
+    {
+        Color DownColor = GetCenterCubeColor(DOWN);
+        bool ok = true;
+        for (int i = 0; i < 4; i++) 
+        {
+            Color FrontColor = GetCenterCubeColor(FRONT);
+            GameObject cube = Cubelets[GetCubeIdByColor(DownColor, FrontColor)];
+            if(Mathf.RoundToInt(cube.transform.localPosition.x)!=0
+                || Mathf.RoundToInt(cube.transform.localPosition.y) != -1
+                || Mathf.RoundToInt(cube.transform.localPosition.z) != 1)
+            {
+                ok = false;
+            }
+            (new TwistAction("ALLY", 90)).MakeTwistQuickly(Cubelets);
+        }
+
+        return ok;
+    }
+
+
+    //判断底层角块是否还原成功
+    bool JudgeDownCorner()
+    {
+        Color DownColor = GetCenterCubeColor(DOWN);
+        bool ok = true;
+        for (int i = 0; i < 4; i++)
+        {
+            Color FrontColor = GetCenterCubeColor(FRONT);
+            Color LeftColor = GetCenterCubeColor(LEFT);
+            GameObject cube = Cubelets[GetCubeIdByColor(DownColor, FrontColor,LeftColor)];
+            if (Mathf.RoundToInt(cube.transform.localPosition.x) != 1
+                || Mathf.RoundToInt(cube.transform.localPosition.y) != -1
+                || Mathf.RoundToInt(cube.transform.localPosition.z) != 1)
+            {
+                ok = false;
+            }
+            (new TwistAction("ALLY", 90)).MakeTwistQuickly(Cubelets);
+        }
+
+        return ok;
+    }
+
+    
+    //判断二层边块是否还原成功
+    bool JudgeSecondLayerEdge()
+    {
+        bool ok = true;
+        for (int i = 0; i < 4; i++)
+        {
+            Color FrontColor = GetCenterCubeColor(FRONT);
+            Color LeftColor = GetCenterCubeColor(LEFT);
+            GameObject cube = Cubelets[GetCubeIdByColor( FrontColor, LeftColor)];
+            if (Mathf.RoundToInt(cube.transform.localPosition.x) != 1
+                || Mathf.RoundToInt(cube.transform.localPosition.y) != 0
+                || Mathf.RoundToInt(cube.transform.localPosition.z) != 1)
+            {
+                ok = false;
+            }
+            (new TwistAction("ALLY", 90)).MakeTwistQuickly(Cubelets);
+        }
+
+        return ok;
+    }
+
+
+    
+
+
+
     //执行一次操作并记录
     void InsertTwistAction(string axis, int axisValue, int angle = 90)
     {
@@ -928,6 +1082,8 @@ public class CubeSolver
         InsertTwistAction("Z", 1, 90);
         InsertTwistAction("ALLY", 1, 90);
     }
+
+
 
 }
 

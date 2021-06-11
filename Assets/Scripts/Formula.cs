@@ -313,6 +313,37 @@ public class Formula
     }
 
 
+    //转换成公式字符串
+    //x y z l1 l2 l3 f1 f2 f3 u1 u2 u3  
+    //从这个方向看的顺时针90度为正，加'表示取逆
+    static public string TwistActionsToFormulaString(List<TwistAction> twistActions)
+    {
+        string formula="";
+
+        foreach(TwistAction twist in twistActions)
+        {
+            if (twist.type == "ALLX") formula += "x";
+            else if (twist.type == "ALLY") formula += "y";
+            else if (twist.type == "ALLZ") formula += "z";
+            else if (twist.type == "X") formula += "l";
+            else if (twist.type == "Y") formula += "u";
+            else if (twist.type == "Z") formula += "f";
+            else Debug.Assert(false);
+
+            if(twist.type == "X"|| twist.type == "Y"|| twist.type == "Z")
+            {
+                formula += (twist.axisValue + 2).ToString();
+            }
+
+            if (twist.sign < 0) formula += "'";
+
+            formula += " ";
+        }
+
+        return formula;
+    }
+
+
     static public void InitFormula()
     {
         if (isInit) return;
