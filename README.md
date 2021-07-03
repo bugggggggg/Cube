@@ -12,19 +12,19 @@ The purpose of this project is because the popular CFOP restoration method has m
 
 **Shuffle**
 
-![cube](D:\tt\同济\用户交互\文档\report\img\cube.png)
+![cube](img\cube.png)
 
 **CSOP Formula**
 
-![formula1](D:\tt\同济\用户交互\文档\report\img\formula1.png)
+![formula1](img\formula1.png)
 
 **Rotate**
 
-![rotate1](D:\tt\同济\用户交互\文档\report\img\rotate1.png)
+![rotate1](img\rotate1.png)
 
 **Solver**
 
-![solver4](D:\tt\同济\用户交互\文档\report\img\solver4.png)
+![solver4](img\solver4.png)
 
 ## Experience the game
 
@@ -42,7 +42,7 @@ In **Release** file, run the **HelloWorld.exe**.
 
 You can import the project in unity like this. Please make sure you are using the unity version of Unity3D 2018.4.35f1 (64-bit).
 
-![1625316172344](C:\Users\王宇其\AppData\Roaming\Typora\typora-user-images\1625316172344.png)
+![1625316172344](img\1625316172344.png)
 
 
 
